@@ -1,0 +1,40 @@
+[project]
+name = "tonus-bot"
+version = "0.1.0"
+description = "Personal single-user Telegram bot for tracking mood and productivity"
+requires-python = ">=3.14"
+dependencies = [
+    "python-telegram-bot[job-queue]>=22.0,<23",
+    "httpx>=0.27,<1",
+    "sqlalchemy",
+    "psycopg",
+    "anthropic",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[project.scripts]
+tonus-bot = "tonus_bot.__main__:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tonus_bot"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
