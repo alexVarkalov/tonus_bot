@@ -64,22 +64,27 @@ uv sync --frozen
 cp .env.example .env   # fill in real values
 ```
 
-`tonus-bot.service`:
+`/etc/systemd/system/tonus-bot.service`:
 
 ```ini
 [Unit]
 Description=tonus-bot
-After=postgresql.service
+After=postgresql.service network-online.target
+Wants=network-online.target
 
 [Service]
-WorkingDirectory=/path/to/tonus-bot
-EnvironmentFile=/path/to/tonus-bot/.env
-ExecStart=/path/to/tonus-bot/.venv/bin/tonus-bot
+User=pi
+WorkingDirectory=/home/pi/tonus-bot
+EnvironmentFile=/home/pi/tonus-bot/.env
+ExecStart=/home/pi/tonus-bot/.venv/bin/tonus-bot
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+Run as an unprivileged user (`User=`), not root.
 
 On the existing PostgreSQL instance, create a separate database and role — don't reuse another
 bot's role:
