@@ -13,9 +13,10 @@ from tonus_bot.repositories import CheckinRepository, InsightRepository
 MODEL = "claude-sonnet-4-6"
 
 _SYSTEM_PROMPT = (
-    "You analyze two weeks of a single person's daily mood/productivity check-ins. Identify "
-    "concrete patterns tied to specific numbers (e.g. correlations between sleep and mood, "
-    "weekday vs weekend swings, streaks). Write 3-5 sentences in English. No generic advice."
+    "You analyze two weeks of a single person's daily mood/productivity check-ins. Mood and "
+    "productivity are each rated on a 1-7 scale. Identify concrete patterns tied to specific "
+    "numbers (e.g. correlations between sleep and mood, weekday vs weekend swings, streaks). "
+    "Write 3-5 sentences in English. No generic advice."
 )
 
 
