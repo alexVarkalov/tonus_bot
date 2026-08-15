@@ -32,7 +32,13 @@ def register_handlers(application: Application) -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, on_note_text),
             ],
         },
-        fallbacks=[CommandHandler("cancel", cmd_cancel_checkin)],
+        fallbacks=[
+            CommandHandler("cancel", cmd_cancel_checkin),
+            # Re-sending /checkin mid-flow restarts it instead of being silently dropped by
+            # whichever state's handlers are currently active.
+            CommandHandler("checkin", cmd_checkin),
+        ],
+        conversation_timeout=1800,
     )
     application.add_handler(checkin_conversation)
     application.add_handler(CommandHandler("stats", cmd_stats))
