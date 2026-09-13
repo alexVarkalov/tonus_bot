@@ -30,6 +30,7 @@ class SettingsStore:
                     checkin_hour=default_checkin_hour,
                     timezone=default_timezone,
                     reminders_enabled=True,
+                    language="en",
                 )
                 session.add(record)
                 session.commit()
@@ -74,5 +75,19 @@ class SettingsStore:
                 session.add(record)
             else:
                 record.reminders_enabled = enabled
+            session.commit()
+            return to_user_settings(record)
+
+    async def set_language(self, user_id: int, language: str) -> UserSettings:
+        return await asyncio.to_thread(self._set_language_sync, user_id, language)
+
+    def _set_language_sync(self, user_id: int, language: str) -> UserSettings:
+        with self._session_factory() as session:
+            record = session.scalar(select(UserSettingsRecord).where(UserSettingsRecord.user_id == user_id))
+            if record is None:
+                record = UserSettingsRecord(user_id=user_id, language=language)
+                session.add(record)
+            else:
+                record.language = language
             session.commit()
             return to_user_settings(record)

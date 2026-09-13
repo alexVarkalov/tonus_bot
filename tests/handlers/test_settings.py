@@ -52,7 +52,7 @@ async def test_cmd_settings_blocks_other_user() -> None:
 async def test_cmd_settings_shows_current_without_args() -> None:
     bot_data = _bot_data()
     bot_data["settings_repository"].ensure.return_value = make_user_settings(
-        checkin_hour=21, timezone="Europe/Warsaw", reminders_enabled=True
+        checkin_hour=21, timezone="Europe/Warsaw", reminders_enabled=True, language="en"
     )
     context = _context([], bot_data)
     update = _update()
@@ -63,6 +63,7 @@ async def test_cmd_settings_shows_current_without_args() -> None:
     assert "21:00" in text
     assert "Europe/Warsaw" in text
     assert "on" in text
+    assert "en" in text
 
 
 @pytest.mark.asyncio
@@ -137,6 +138,32 @@ async def test_cmd_settings_reminders_rejects_invalid_value() -> None:
     await cmd_settings(update, context)
 
     bot_data["settings_repository"].set_reminders_enabled.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cmd_settings_language_updates_valid_value() -> None:
+    bot_data = _bot_data()
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
+    context = _context(["language", "ru"], bot_data)
+    update = _update()
+
+    await cmd_settings(update, context)
+
+    bot_data["settings_repository"].set_language.assert_awaited_once_with(100, "ru")
+    text = update.effective_message.reply_text.await_args.args[0]
+    assert "ru" in text
+
+
+@pytest.mark.asyncio
+async def test_cmd_settings_language_rejects_invalid_value() -> None:
+    bot_data = _bot_data()
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
+    context = _context(["language", "fr"], bot_data)
+    update = _update()
+
+    await cmd_settings(update, context)
+
+    bot_data["settings_repository"].set_language.assert_not_awaited()
 
 
 @pytest.mark.asyncio

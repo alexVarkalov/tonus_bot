@@ -121,10 +121,12 @@ async def test_cmd_checkin_not_ambiguous_asks_mood() -> None:
 
 @pytest.mark.asyncio
 async def test_on_date_callback_switches_to_today() -> None:
-    context = _context()
+    bot_data = _bot_data()
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
+    context = _context(bot_data)
     context.user_data.update({"checkin_date": date(2026, 1, 1), "checkin_alternate_date": date(2026, 1, 2)})
     query = _query(checkin_module._DATE_CALLBACK_TODAY)
-    update = SimpleNamespace(callback_query=query)
+    update = SimpleNamespace(callback_query=query, effective_user=SimpleNamespace(id=100))
 
     result = await on_date_callback(update, context)
 
@@ -135,10 +137,12 @@ async def test_on_date_callback_switches_to_today() -> None:
 
 @pytest.mark.asyncio
 async def test_on_date_callback_keeps_yesterday() -> None:
-    context = _context()
+    bot_data = _bot_data()
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
+    context = _context(bot_data)
     context.user_data.update({"checkin_date": date(2026, 1, 1), "checkin_alternate_date": date(2026, 1, 2)})
     query = _query(checkin_module._DATE_CALLBACK_YESTERDAY)
-    update = SimpleNamespace(callback_query=query)
+    update = SimpleNamespace(callback_query=query, effective_user=SimpleNamespace(id=100))
 
     result = await on_date_callback(update, context)
 
@@ -150,9 +154,10 @@ async def test_on_date_callback_keeps_yesterday() -> None:
 async def test_on_mood_callback_stores_rating_and_advances() -> None:
     bot_data = _bot_data()
     bot_data["checkin_service"].validate_rating.side_effect = lambda v: v
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
     context = _context(bot_data)
     query = _query("checkin:mood:5")
-    update = SimpleNamespace(callback_query=query)
+    update = SimpleNamespace(callback_query=query, effective_user=SimpleNamespace(id=100))
 
     result = await on_mood_callback(update, context)
 
@@ -166,15 +171,16 @@ async def test_on_mood_callback_stores_rating_and_advances() -> None:
 async def test_on_productivity_callback_stores_rating_and_advances() -> None:
     bot_data = _bot_data()
     bot_data["checkin_service"].validate_rating.side_effect = lambda v: v
+    bot_data["settings_repository"].ensure.return_value = make_user_settings()
     context = _context(bot_data)
     query = _query("checkin:prod:4")
-    update = SimpleNamespace(callback_query=query)
+    update = SimpleNamespace(callback_query=query, effective_user=SimpleNamespace(id=100))
 
     result = await on_productivity_callback(update, context)
 
     assert result == NOTE
     assert context.user_data["checkin_productivity"] == 4
-    query.edit_message_text.assert_awaited_once_with(checkin_module.strings.CHECKIN_ASK_NOTE)
+    query.edit_message_text.assert_awaited_once_with(checkin_module.strings.t("CHECKIN_ASK_NOTE", "en"))
     query.edit_message_reply_markup.assert_not_awaited()
 
 

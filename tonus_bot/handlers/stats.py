@@ -21,11 +21,12 @@ async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     checkin_service: CheckinService = context.application.bot_data["checkin_service"]
     user_settings = await ensure_user_settings(context, user_id)
+    lang = user_settings.language
     today = local_today(datetime.now(UTC), user_settings.timezone)
 
     current = await checkin_service.get_recent(user_id, days=STATS_DAYS, today=today)
     if not current:
-        await update.effective_message.reply_text(strings.STATS_EMPTY)
+        await update.effective_message.reply_text(strings.t("STATS_EMPTY", lang))
         return
 
     previous = await checkin_service.get_recent(user_id, days=STATS_DAYS, today=today - timedelta(days=STATS_DAYS))
@@ -36,10 +37,10 @@ async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         trends.average([c.productivity for c in current]), trends.average([c.productivity for c in previous])
     )
 
-    lines = [strings.STATS_HEADER.format(days=STATS_DAYS)]
-    lines.extend(strings.STATS_ROW.format(date=c.date, mood=c.mood, productivity=c.productivity) for c in current)
+    lines = [strings.t("STATS_HEADER", lang, days=STATS_DAYS)]
+    lines.extend(strings.t("STATS_ROW", lang, date=c.date, mood=c.mood, productivity=c.productivity) for c in current)
     lines.append("")
-    lines.append(strings.STATS_TREND.format(mood_trend=mood_trend, productivity_trend=productivity_trend))
+    lines.append(strings.t("STATS_TREND", lang, mood_trend=mood_trend, productivity_trend=productivity_trend))
     await update.effective_message.reply_text("\n".join(lines))
 
 
@@ -50,13 +51,14 @@ async def cmd_week(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
     checkin_service: CheckinService = context.application.bot_data["checkin_service"]
     user_settings = await ensure_user_settings(context, user_id)
+    lang = user_settings.language
     today = local_today(datetime.now(UTC), user_settings.timezone)
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
 
     checkins = await checkin_service.get_recent(user_id, days=(today - week_start).days + 1, today=today)
     if not checkins:
-        await update.effective_message.reply_text(strings.WEEK_EMPTY)
+        await update.effective_message.reply_text(strings.t("WEEK_EMPTY", lang))
         return
 
     avg_mood = trends.average([c.mood for c in checkins]) or 0.0
@@ -65,8 +67,8 @@ async def cmd_week(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.effective_message.reply_text(
         "\n".join(
             [
-                strings.WEEK_HEADER.format(start=week_start, end=week_end),
-                strings.WEEK_AVERAGES.format(avg_mood=avg_mood, avg_productivity=avg_productivity),
+                strings.t("WEEK_HEADER", lang, start=week_start, end=week_end),
+                strings.t("WEEK_AVERAGES", lang, avg_mood=avg_mood, avg_productivity=avg_productivity),
             ]
         )
     )
@@ -86,11 +88,13 @@ async def weekly_analysis_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     week_start = today - timedelta(days=today.weekday())
 
     try:
-        insight = await analysis_service.generate_weekly_insight(settings.allowed_user_id, week_start)
+        insight = await analysis_service.generate_weekly_insight(
+            settings.allowed_user_id, week_start, language=user_settings.language
+        )
     except ValueError:
         return
 
     await context.bot.send_message(
         chat_id=settings.allowed_user_id,
-        text=f"{strings.WEEKLY_INSIGHT_HEADER}\n{insight.insight_text}",
+        text=f"{strings.t('WEEKLY_INSIGHT_HEADER', user_settings.language)}\n{insight.insight_text}",
     )

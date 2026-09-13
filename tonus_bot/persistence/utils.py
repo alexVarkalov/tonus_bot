@@ -42,4 +42,5 @@ def to_user_settings(record: UserSettingsRecord) -> UserSettings:
         checkin_hour=record.checkin_hour,
         timezone=record.timezone,
         reminders_enabled=bool(record.reminders_enabled),
+        language=record.language,
     )

@@ -34,3 +34,4 @@ class UserSettings:
     checkin_hour: int
     timezone: str
     reminders_enabled: bool
+    language: str

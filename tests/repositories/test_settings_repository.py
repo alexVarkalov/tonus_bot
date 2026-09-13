@@ -35,7 +35,9 @@ async def test_setters_delegate_to_db() -> None:
     await repo.set_checkin_hour(1, 8)
     await repo.set_timezone(1, "UTC")
     await repo.set_reminders_enabled(1, False)
+    await repo.set_language(1, "ru")
 
     db.set_checkin_hour.assert_awaited_once_with(1, 8)
     db.set_timezone.assert_awaited_once_with(1, "UTC")
     db.set_reminders_enabled.assert_awaited_once_with(1, False)
+    db.set_language.assert_awaited_once_with(1, "ru")

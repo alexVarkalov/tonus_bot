@@ -24,3 +24,6 @@ class SettingsRepository:
 
     async def set_reminders_enabled(self, user_id: int, enabled: bool) -> UserSettings:
         return await self._db.set_reminders_enabled(user_id, enabled)
+
+    async def set_language(self, user_id: int, language: str) -> UserSettings:
+        return await self._db.set_language(user_id, language)
