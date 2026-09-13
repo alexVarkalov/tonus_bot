@@ -12,12 +12,17 @@ from tonus_bot.repositories import CheckinRepository, InsightRepository
 
 MODEL = "claude-sonnet-4-6"
 
-_SYSTEM_PROMPT = (
-    "You analyze two weeks of a single person's daily mood/productivity check-ins. Mood and "
-    "productivity are each rated on a 1-7 scale. Identify concrete patterns tied to specific "
-    "numbers (e.g. correlations between sleep and mood, weekday vs weekend swings, streaks). "
-    "Write 3-5 sentences in English. No generic advice."
-)
+_LANGUAGE_NAMES = {"en": "English", "ru": "Russian"}
+
+
+def _system_prompt(language: str) -> str:
+    language_name = _LANGUAGE_NAMES.get(language, _LANGUAGE_NAMES["en"])
+    return (
+        "You analyze two weeks of a single person's daily mood/productivity check-ins. Mood and "
+        "productivity are each rated on a 1-7 scale. Identify concrete patterns tied to specific "
+        "numbers (e.g. correlations between sleep and mood, weekday vs weekend swings, streaks). "
+        f"Write 3-5 sentences in {language_name}. No generic advice."
+    )
 
 
 class AnalysisService:
@@ -33,7 +38,7 @@ class AnalysisService:
         self._checkin_repository = checkin_repository
         self._insight_repository = insight_repository
 
-    async def generate_weekly_insight(self, user_id: int, week_start: date) -> WeeklyInsight:
+    async def generate_weekly_insight(self, user_id: int, week_start: date, *, language: str = "en") -> WeeklyInsight:
         window_start = week_start - timedelta(days=7)
         window_end = week_start + timedelta(days=6)
         checkins = await self._checkin_repository.get_range(user_id, window_start, window_end)
@@ -57,7 +62,7 @@ class AnalysisService:
             response = await self._client.messages.create(
                 model=MODEL,
                 max_tokens=400,
-                system=_SYSTEM_PROMPT,
+                system=_system_prompt(language),
                 messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
             )
         except anthropic.APIError as exc:

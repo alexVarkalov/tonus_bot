@@ -66,6 +66,22 @@ async def test_generate_weekly_insight_raises_on_empty_response() -> None:
 
 
 @pytest.mark.asyncio
+async def test_generate_weekly_insight_passes_language_to_system_prompt() -> None:
+    checkin_repo = AsyncMock()
+    checkin_repo.get_range.return_value = [make_checkin()]
+    insight_repo = AsyncMock()
+    insight_repo.save.return_value = make_weekly_insight(insight_text="pattern found")
+    client = AsyncMock()
+    client.messages.create.return_value = _text_response("pattern found")
+    service = AnalysisService(_settings(), client, checkin_repo, insight_repo)
+
+    await service.generate_weekly_insight(1, date(2026, 1, 5), language="ru")
+
+    _, kwargs = client.messages.create.await_args
+    assert "Russian" in kwargs["system"]
+
+
+@pytest.mark.asyncio
 async def test_generate_weekly_insight_wraps_api_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeAPIError(Exception):
         pass

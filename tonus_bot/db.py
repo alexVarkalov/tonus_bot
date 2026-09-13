@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -27,3 +27,7 @@ class Database(CheckinStore, InsightStore, SettingsStore):
 
     def _init_sync(self) -> None:
         Base.metadata.create_all(self._engine)
+        # Additive migration for deployments created before language support existed;
+        # create_all() alone won't add columns to a table that already exists.
+        with self._engine.begin() as conn:
+            conn.execute(text("ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS language TEXT NOT NULL DEFAULT 'en'"))

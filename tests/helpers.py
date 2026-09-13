@@ -28,6 +28,7 @@ def make_user_settings(**overrides: object) -> UserSettings:
         "checkin_hour": 21,
         "timezone": "Europe/Warsaw",
         "reminders_enabled": True,
+        "language": "en",
     }
     defaults.update(overrides)
     return UserSettings(**defaults)

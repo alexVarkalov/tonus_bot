@@ -9,7 +9,7 @@ Place this file at the root of the `tonus-bot/` repository. Claude Code picks it
 
 ## Differences from language-assistant (reference bot)
 
-- **No `i18n.py`** — single user, single language (English). Strings live in `strings.py`, flat constants, no locale keys.
+- **No `i18n.py`** — single user, but the user can choose between two languages (English/Russian). Strings live in `strings.py` as two flat dicts (`_EN`, `_RU`) plus a `t(key, lang, **kwargs)` lookup/format helper — no generic locale-file/gettext machinery, since only two fixed languages exist.
 - **No access-control layer** — instead of `is_allowed` / `ADMIN_USER_IDS`, a single `ALLOWED_USER_ID` in config; handlers silently ignore updates from any other `user_id`.
 - **No streaks or penalties for missed check-ins** — the scheduler checks for a missing check-in and sends one reminder, nothing more.
 - Everything else — layout, layers, ORM patterns, testing, deployment — follows the reference 1:1.
@@ -52,7 +52,7 @@ tonus-bot/
 │   ├── __main__.py          # entry point: dotenv, logging, Application bootstrap
 │   ├── config.py            # frozen Settings dataclass from env
 │   ├── db.py                # Database facade, mixes in store classes
-│   ├── strings.py           # flat English strings, no i18n
+│   ├── strings.py           # EN/RU string dicts + t(key, lang) helper, no generic i18n layer
 │   ├── handlers/
 │   │   ├── __init__.py      # register_handlers()
 │   │   ├── common.py        # access guard, formatting helpers
@@ -114,7 +114,7 @@ handlers  →  services  →  repositories  →  persistence (stores + ORM)
 
 - Early-return on missing `effective_user` / `effective_message` / `callback_query`.
 - Check `update.effective_user.id == settings.allowed_user_id` at the top of every handler — on mismatch, just `return`, no reply (so the bot doesn't confirm its own existence to strangers).
-- Strings only from `strings.py`, never hardcoded in handlers.
+- Strings only from `strings.py` via `strings.t(key, lang, **kwargs)`, never hardcoded in handlers. `lang` comes from `UserSettings.language`.
 - No business logic or SQL in handlers — call services instead.
 - Register all handlers centrally in `handlers/__init__.py::register_handlers()`.
 
@@ -170,7 +170,8 @@ CREATE TABLE user_settings (
     user_id BIGINT PRIMARY KEY,
     checkin_hour SMALLINT NOT NULL DEFAULT 21,
     timezone TEXT NOT NULL DEFAULT 'Europe/Warsaw',
-    reminders_enabled BOOLEAN NOT NULL DEFAULT true
+    reminders_enabled BOOLEAN NOT NULL DEFAULT true,
+    language TEXT NOT NULL DEFAULT 'en'
 );
 ```
 
@@ -388,7 +389,7 @@ select = ["E", "F", "I", "B", "UP"]
 | Raw SQL in handlers | Repository → store |
 | `python-dotenv` for one file | Inline loader in `__main__.py` |
 | `psycopg[binary]` on ARM Pi | Plain `psycopg` |
-| i18n layer for a single language | `strings.py` |
+| Generic locale-file/gettext i18n layer for two fixed languages | `strings.py` EN/RU dicts + `t(key, lang)` |
 | Access-control layer for a single user | `ALLOWED_USER_ID` in config |
 | Async SQLAlchemy | Sync ORM + `asyncio.to_thread` |
 | Standalone `apscheduler` dependency | PTB's `job-queue` extra |

@@ -11,10 +11,11 @@ Architecture and conventions are documented in [`CLAUDE.md`](./CLAUDE.md).
   1-7, with an optional note.
 - `/stats` — last 7 days, with mood/productivity trend arrows vs. the previous 7 days.
 - `/week` — averages for the current calendar week.
-- `/settings` — view or change reminder hour, timezone, and whether reminders are on.
+- `/settings` — view or change reminder hour, timezone, whether reminders are on, and language.
   - `/settings hour <0-23>`
   - `/settings timezone <IANA timezone>`
   - `/settings reminders on|off`
+  - `/settings language en|ru`
 
 Every hour the bot checks whether it's the configured reminder hour and there's no check-in yet
 for today; if so, it sends one reminder. Every Sunday evening it pulls the last two weeks of

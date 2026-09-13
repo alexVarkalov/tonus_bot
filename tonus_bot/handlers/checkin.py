@@ -30,6 +30,7 @@ async def cmd_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
     checkin_service: CheckinService = context.application.bot_data["checkin_service"]
     user_settings = await ensure_user_settings(context, update.effective_user.id)
+    lang = user_settings.language
     resolution = checkin_service.resolve_checkin_date(datetime.now(UTC), user_settings.timezone)
 
     if resolution.is_ambiguous:
@@ -39,22 +40,24 @@ async def cmd_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
             [
                 [
                     InlineKeyboardButton(
-                        strings.CHECKIN_DATE_BUTTON_YESTERDAY.format(date=resolution.date),
+                        strings.t("CHECKIN_DATE_BUTTON_YESTERDAY", lang, date=resolution.date),
                         callback_data=_DATE_CALLBACK_YESTERDAY,
                     ),
-                    InlineKeyboardButton(strings.CHECKIN_DATE_BUTTON_TODAY, callback_data=_DATE_CALLBACK_TODAY),
+                    InlineKeyboardButton(
+                        strings.t("CHECKIN_DATE_BUTTON_TODAY", lang), callback_data=_DATE_CALLBACK_TODAY
+                    ),
                 ]
             ]
         )
         await update.effective_message.reply_text(
-            strings.CHECKIN_DATE_CONFIRM.format(yesterday=resolution.date, today=resolution.alternate_date),
+            strings.t("CHECKIN_DATE_CONFIRM", lang, yesterday=resolution.date, today=resolution.alternate_date),
             reply_markup=keyboard,
         )
         return CONFIRM_DATE
 
     context.user_data["checkin_date"] = resolution.date
     await update.effective_message.reply_text(
-        strings.CHECKIN_ASK_MOOD.format(date=resolution.date), reply_markup=_rating_keyboard(_MOOD_PREFIX)
+        strings.t("CHECKIN_ASK_MOOD", lang, date=resolution.date), reply_markup=_rating_keyboard(_MOOD_PREFIX)
     )
     return MOOD
 
@@ -69,8 +72,10 @@ async def on_date_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         context.user_data["checkin_date"] = context.user_data["checkin_alternate_date"]
     checkin_date: date = context.user_data["checkin_date"]
 
+    user_settings = await ensure_user_settings(context, update.effective_user.id)
     await query.edit_message_text(
-        strings.CHECKIN_ASK_MOOD.format(date=checkin_date), reply_markup=_rating_keyboard(_MOOD_PREFIX)
+        strings.t("CHECKIN_ASK_MOOD", user_settings.language, date=checkin_date),
+        reply_markup=_rating_keyboard(_MOOD_PREFIX),
     )
     return MOOD
 
@@ -85,7 +90,11 @@ async def on_mood_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     mood = checkin_service.validate_rating(int(query.data.removeprefix(_MOOD_PREFIX)))
     context.user_data["checkin_mood"] = mood
 
-    await query.edit_message_text(strings.CHECKIN_ASK_PRODUCTIVITY, reply_markup=_rating_keyboard(_PRODUCTIVITY_PREFIX))
+    user_settings = await ensure_user_settings(context, update.effective_user.id)
+    await query.edit_message_text(
+        strings.t("CHECKIN_ASK_PRODUCTIVITY", user_settings.language),
+        reply_markup=_rating_keyboard(_PRODUCTIVITY_PREFIX),
+    )
     return PRODUCTIVITY
 
 
@@ -99,9 +108,10 @@ async def on_productivity_callback(update: Update, context: ContextTypes.DEFAULT
     productivity = checkin_service.validate_rating(int(query.data.removeprefix(_PRODUCTIVITY_PREFIX)))
     context.user_data["checkin_productivity"] = productivity
 
+    user_settings = await ensure_user_settings(context, update.effective_user.id)
     # edit_message_text always sends reply_markup (defaulting to None), which already clears
     # the keyboard here — no separate edit_message_reply_markup call needed or safe to make.
-    await query.edit_message_text(strings.CHECKIN_ASK_NOTE)
+    await query.edit_message_text(strings.t("CHECKIN_ASK_NOTE", user_settings.language))
     return NOTE
 
 
@@ -114,8 +124,9 @@ async def cmd_skip_note(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 
 async def cmd_cancel_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_settings = await ensure_user_settings(context, update.effective_user.id)
     context.user_data.clear()
-    await update.effective_message.reply_text(strings.CHECKIN_CANCELLED)
+    await update.effective_message.reply_text(strings.t("CHECKIN_CANCELLED", user_settings.language))
     return ConversationHandler.END
 
 
@@ -137,9 +148,10 @@ async def _finish_checkin(update: Update, context: ContextTypes.DEFAULT_TYPE, *,
     )
     checkin = enriched or checkin
 
-    text = strings.CHECKIN_SAVED.format(date=checkin_date, mood=mood, productivity=productivity)
+    lang = user_settings.language
+    text = strings.t("CHECKIN_SAVED", lang, date=checkin_date, mood=mood, productivity=productivity)
     if checkin.sleep_hours is not None or checkin.steps is not None:
-        text += strings.CHECKIN_ENRICHED.format(sleep_hours=checkin.sleep_hours or 0.0, steps=checkin.steps or 0)
+        text += strings.t("CHECKIN_ENRICHED", lang, sleep_hours=checkin.sleep_hours or 0.0, steps=checkin.steps or 0)
 
     await update.effective_message.reply_text(text)
     context.user_data.clear()
@@ -166,4 +178,6 @@ async def reminder_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     if reminder_service.should_remind(
         now_utc, user_settings.timezone, user_settings.checkin_hour, has_checkin_today=has_checkin
     ):
-        await context.bot.send_message(chat_id=settings.allowed_user_id, text=strings.REMINDER_TEXT)
+        await context.bot.send_message(
+            chat_id=settings.allowed_user_id, text=strings.t("REMINDER_TEXT", user_settings.language)
+        )

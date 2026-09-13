@@ -19,6 +19,7 @@ def _fake_settings_record(**overrides: object) -> SimpleNamespace:
         "checkin_hour": 21,
         "timezone": "Europe/Warsaw",
         "reminders_enabled": True,
+        "language": "en",
     }
     defaults.update(overrides)
     return SimpleNamespace(**defaults)
@@ -48,6 +49,7 @@ def test_ensure_settings_sync_creates_when_missing(monkeypatch: pytest.MonkeyPat
 
     assert out.timezone == "Europe/Warsaw"
     assert out.checkin_hour == 21
+    assert out.language == "en"
     assert session.added
     assert session.committed == 1
 
@@ -71,6 +73,7 @@ def test_ensure_settings_sync_returns_existing(monkeypatch: pytest.MonkeyPatch) 
         ("_set_checkin_hour_sync", "checkin_hour", 8),
         ("_set_timezone_sync", "timezone", "UTC"),
         ("_set_reminders_enabled_sync", "reminders_enabled", False),
+        ("_set_language_sync", "language", "ru"),
     ],
 )
 def test_setters_create_record_when_missing(
@@ -93,6 +96,7 @@ def test_setters_create_record_when_missing(
         ("_set_checkin_hour_sync", "checkin_hour", 8),
         ("_set_timezone_sync", "timezone", "UTC"),
         ("_set_reminders_enabled_sync", "reminders_enabled", False),
+        ("_set_language_sync", "language", "ru"),
     ],
 )
 def test_setters_update_existing_record(

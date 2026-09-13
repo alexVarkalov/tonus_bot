@@ -55,3 +55,4 @@ class UserSettingsRecord(Base):
     checkin_hour: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=21)
     timezone: Mapped[str] = mapped_column(String, nullable=False, default="Europe/Warsaw")
     reminders_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    language: Mapped[str] = mapped_column(String, nullable=False, default="en")
